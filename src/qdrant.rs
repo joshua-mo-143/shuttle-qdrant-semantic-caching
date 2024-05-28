@@ -1,17 +1,19 @@
 use anyhow::Result;
-use async_openai::types::{ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs, CreateEmbeddingRequest, EmbeddingInput};
+use async_openai::types::{
+    ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestUserMessageArgs, CreateChatCompletionRequestArgs, CreateEmbeddingRequest,
+    EmbeddingInput,
+};
 use async_openai::Embeddings;
 use async_openai::{config::OpenAIConfig, Client};
 use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use qdrant_client::prelude::{
-    CreateCollection, Distance, Payload, PointStruct, QdrantClient, QdrantClientConfig,
-};
+use qdrant_client::prelude::{CreateCollection, Distance, PointStruct, QdrantClient};
 use qdrant_client::qdrant::{
-    vectors_config::Config, with_payload_selector::SelectorOptions, ScoredPoint, SearchPoints,
-    VectorParams, VectorsConfig, WithPayloadSelector,
+    vectors_config::Config, with_payload_selector::SelectorOptions, SearchPoints, VectorParams,
+    VectorsConfig, WithPayloadSelector,
 };
 
 #[derive(Clone)]
@@ -101,11 +103,14 @@ impl RAGSystem {
         Ok(())
     }
 
-    async fn embed_csv_file(&self, file_path: PathBuf) -> Result<()> {
+    pub async fn embed_csv_file(&self, file_path: PathBuf) -> Result<()> {
         let file_contents = std::fs::read_to_string(&file_path)?;
 
-        let chunked_file_contents: Vec<String> =
-            file_contents.lines().skip(1).map(|x| x.to_owned()).collect();
+        let chunked_file_contents: Vec<String> = file_contents
+            .lines()
+            .skip(1)
+            .map(|x| x.to_owned())
+            .collect();
 
         let embedding_request = CreateEmbeddingRequest {
             model: "text-embedding-ada-002".to_string(),
@@ -136,7 +141,7 @@ impl RAGSystem {
         Ok(())
     }
 
-    async fn embed_prompt(&self, prompt: &str) -> Result<Vec<f32>> {
+    pub async fn embed_prompt(&self, prompt: &str) -> Result<Vec<f32>> {
         let embedding_request = CreateEmbeddingRequest {
             model: "text-embedding-ada-002".to_string(),
             input: EmbeddingInput::String(prompt.to_owned()),
@@ -187,15 +192,12 @@ impl RAGSystem {
         let result = search_result.result.into_iter().next();
 
         match result {
-            Some(res) =>{
-                self.add_to_cache(embedding, )
-                Ok( res.payload.get("document").unwrap().to_string())
-            },
+            Some(res) => Ok(res.payload.get("document").unwrap().to_string()),
             None => Err(anyhow::anyhow!("There's nothing matching.")),
         }
     }
 
-    async fn search_cache(&self, embedding: Vec<f32>) -> Result<String> {
+    pub async fn search_cache(&self, embedding: Vec<f32>) -> Result<String> {
         let payload_selector = WithPayloadSelector {
             selector_options: Some(SelectorOptions::Enable(true)),
         };
@@ -222,7 +224,7 @@ impl RAGSystem {
         }
     }
 
-    async fn add_to_cache(&self, embedding: Vec<f32>, answer: String) -> Result<()> {
+    pub async fn add_to_cache(&self, embedding: Vec<f32>, answer: &str) -> Result<()> {
         let payload = serde_json::json!({
            "answer": answer
         })
@@ -243,14 +245,13 @@ impl RAGSystem {
     }
 
     pub async fn prompt(&self, prompt: &str, context: &str) -> Result<String> {
-
         let input = format!(
             "{prompt}
 
             Provided context:
             {context}
-            ");
-
+            "
+        );
 
         let res = self
             .openai_client
@@ -261,8 +262,7 @@ impl RAGSystem {
                     .messages(vec![
                         //First we add the system message to define what the Agent does
                         ChatCompletionRequestMessage::System(
-                            ChatCompletionRequestSystemMessageArgs::default()
-                                .build()?,
+                            ChatCompletionRequestSystemMessageArgs::default().build()?,
                         ),
                         //Then we add our prompt
                         ChatCompletionRequestMessage::User(
