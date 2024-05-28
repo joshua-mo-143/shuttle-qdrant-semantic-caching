@@ -1,0 +1,18 @@
+[package]
+name = "shuttle-qdrant-semantic-caching"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.86"
+async-openai = "0.21.0"
+axum = "0.7.5"
+qdrant-client = "1.7.0"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+shuttle-axum = "0.45.0"
+shuttle-qdrant = "0.45.0"
+shuttle-runtime = "0.45.0"
+uuid = { version = "1.8.0", features = ["v4"] }
