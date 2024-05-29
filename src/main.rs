@@ -1,9 +1,12 @@
 mod qdrant;
 
+use std::env;
+
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use qdrant::RAGSystem;
 use qdrant_client::client::QdrantClient;
 use serde::Deserialize;
+use shuttle_runtime::SecretStore;
 
 #[derive(Deserialize)]
 struct Prompt {
@@ -28,7 +31,7 @@ async fn prompt(
         return Ok(answer);
     }
 
-    let search_result = match state.search(&prompt.prompt).await {
+    let search_result = match state.search(embedding.clone()).await {
         Ok(res) => res,
         Err(e) => {
             return Err((
@@ -59,7 +62,16 @@ async fn prompt(
 }
 
 #[shuttle_runtime::main]
-async fn main(#[shuttle_qdrant::Qdrant] qdrant: QdrantClient) -> shuttle_axum::ShuttleAxum {
+async fn main(
+    #[shuttle_qdrant::Qdrant(
+        cloud_url = "{secrets.QDRANT_URL}",
+        api_key = "{secrets.QDRANT_API_KEY}"
+    )]
+    qdrant: QdrantClient,
+    #[shuttle_runtime::Secrets] secrets: SecretStore,
+) -> shuttle_axum::ShuttleAxum {
+    secrets.into_iter().for_each(|x| env::set_var(x.0, x.1));
+
     let rag = RAGSystem::new(qdrant);
 
     let setup_required = true;

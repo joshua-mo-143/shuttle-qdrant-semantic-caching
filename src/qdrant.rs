@@ -163,13 +163,7 @@ impl RAGSystem {
         Ok(embeddings.data.into_iter().next().unwrap().embedding)
     }
 
-    pub async fn search(&self, prompt: &str) -> Result<String> {
-        let embedding = self.embed_prompt(prompt).await?;
-
-        if let Ok(answer) = self.search_cache(embedding.clone()).await {
-            return Ok(answer);
-        }
-
+    pub async fn search(&self, embedding: Vec<f32>) -> Result<String> {
         let payload_selector = WithPayloadSelector {
             selector_options: Some(SelectorOptions::Enable(true)),
         };
@@ -186,15 +180,15 @@ impl RAGSystem {
             .qdrant_client
             .search_points(&search_points)
             .await
-            .inspect_err(|x| println!("An error occurred while searching for points: {x}"))
-            .unwrap();
+            .inspect_err(|x| println!("An error occurred while searching for points: {x}"))?;
 
         let result = search_result.result.into_iter().next();
 
-        match result {
-            Some(res) => Ok(res.payload.get("document").unwrap().to_string()),
-            None => Err(anyhow::anyhow!("There's nothing matching.")),
-        }
+        let Some(result) = result else {
+            return Err(anyhow::anyhow!("There's nothing matching."));
+        };
+
+        Ok(result.payload.get("document").unwrap().to_string())
     }
 
     pub async fn search_cache(&self, embedding: Vec<f32>) -> Result<String> {
@@ -218,10 +212,11 @@ impl RAGSystem {
 
         let result = search_result.result.into_iter().next();
 
-        match result {
-            Some(res) => Ok(res.payload.get("answer").unwrap().to_string()),
-            None => Err(anyhow::anyhow!("There's nothing matching.")),
-        }
+        let Some(result) = result else {
+            return Err(anyhow::anyhow!("There's nothing matching."));
+        };
+
+        Ok(result.payload.get("answer").unwrap().to_string())
     }
 
     pub async fn add_to_cache(&self, embedding: Vec<f32>, answer: &str) -> Result<()> {
