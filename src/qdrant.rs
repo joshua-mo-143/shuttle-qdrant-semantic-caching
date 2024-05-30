@@ -17,7 +17,7 @@ use qdrant_client::qdrant::{
 };
 
 #[derive(Clone)]
-pub struct RAGSystem {
+pub struct RagSystem {
     qdrant_client: Arc<QdrantClient>,
     openai_client: Client<OpenAIConfig>,
 }
@@ -25,7 +25,7 @@ pub struct RAGSystem {
 static REGULAR_COLLECTION_NAME: &str = "my-collection";
 static CACHE_COLLECTION_NAME: &str = "my-collection-cached";
 
-impl RAGSystem {
+impl RagSystem {
     pub fn new(qdrant_client: QdrantClient) -> Self {
         let openai_api_key = env::var("OPENAI_API_KEY").unwrap();
 
