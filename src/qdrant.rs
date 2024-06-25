@@ -201,6 +201,7 @@ impl RagSystem {
             vector: embedding,
             limit: 1,
             with_payload: Some(payload_selector),
+            score_threshold: Some(0.35f32),
             ..Default::default()
         };
 
